@@ -3,12 +3,15 @@ import mediapipe as mp
 import time
 import math
 import numpy as np
+import pytesseract
 
 cap = cv2.VideoCapture(0)
 mpHands = mp.solutions.hands
 hands = mpHands.Hands()  #(self,static_image_mode,max_num_hands,min_detection_confidence,min_tracking_confidence) - default: (False,2,0.5,0.5)
 mpDraw = mp.solutions.drawing_utils 
 
+frame_interval = 100
+frame_count = 0
 pTime = 0   #previous time
 cTime = 0   #current time
 drawing_mode = False
@@ -27,7 +30,7 @@ while True:
     if results.multi_hand_landmarks:
         for hand_id,handLms in enumerate(results.multi_hand_landmarks):
             for id, lm in enumerate(handLms.landmark):
-                print(f'{id}: {lm}')
+                # print(f'{id}: {lm}')
                 h,w,c = img.shape
                 h_canva,w_canva,c_canva = white_canvas.shape
                 cx,cy = int(lm.x * w) , int(lm.y * h)
@@ -59,24 +62,26 @@ while True:
             else: 
                 drawing_mode = False
             
-            if distance_clear < 40:
-                white_canvas.fill(255)
+            # if distance_clear < 40:
+            #     white_canvas.fill(255)
+
+                if distance_clear < 40:
+                    text = pytesseract.image_to_string(white_canvas, lang="eng")
+                    print(f"Detected Text: {text}")
 
             if hand_id == 1 and drawing_mode:
                 if cx_8_drawing_previous == 0 and cy_8_drawing_previous == 0:
                     cv2.line(white_canvas,(cx_8_drawing_previous,cy_8_drawing_previous),(cx_8_drawing,cy_8_drawing),(255,255,255) , 5)
                     cx_8_drawing_previous,cy_8_drawing_previous = cx_8_drawing,cy_8_drawing
                 else:
-                    cv2.line(white_canvas,(cx_8_drawing_previous,cy_8_drawing_previous),(cx_8_drawing,cy_8_drawing),(255,0,0) , 5)
+                    cv2.line(white_canvas,(cx_8_drawing_previous,cy_8_drawing_previous),(cx_8_drawing,cy_8_drawing),(0,0,0) , 5)
                     #time.sleep(0.1)
                     cx_8_drawing_previous,cy_8_drawing_previous = cx_8_drawing,cy_8_drawing
 
             elif not drawing_mode:
                 cx_8_drawing_previous = 0
                 cy_8_drawing_previous = 0
-    
-
-
+    frame_count += 1
     cTime = time.time()
     fps = 1/(cTime - pTime)
     pTime = cTime
